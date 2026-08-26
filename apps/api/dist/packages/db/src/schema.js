@@ -1,0 +1,78 @@
+import { pgTable, uuid, text, timestamp, integer, unique } from 'drizzle-orm/pg-core';
+export const users = pgTable('users', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    email: text('email').notNull().unique(),
+    passwordHash: text('password_hash').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const characters = pgTable('characters', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id),
+    name: text('name').notNull(),
+    title: text('title'),
+    archetype: text('archetype'),
+    avatarUrl: text('avatar_url'),
+    lore: text('lore'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const arenas = pgTable('arenas', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id),
+    name: text('name').notNull(),
+    description: text('description'),
+    slug: text('slug').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+});
+export const quests = pgTable('quests', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id),
+    arenaId: uuid('arena_id').notNull().references(() => arenas.id),
+    title: text('title').notNull(),
+    description: text('description'),
+    type: text('type', { enum: ['DAILY', 'WEEKLY', 'SIDE', 'MAIN', 'BOSS', 'MAINTENANCE', 'RECOVERY', 'EXPLORATION'] }).notNull(),
+    difficulty: text('difficulty', { enum: ['TRIVIAL', 'EASY', 'NORMAL', 'HARD', 'EPIC', 'BOSS'] }).notNull(),
+    xpReward: integer('xp_reward').notNull(),
+    status: text('status', { enum: ['DRAFT', 'ACTIVE', 'COMPLETED', 'ABANDONED'] }).notNull().default('ACTIVE'),
+    dueAt: timestamp('due_at', { withTimezone: true }),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const questCompletions = pgTable('quest_completions', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    questId: uuid('quest_id').notNull().references(() => quests.id),
+    userId: uuid('user_id').notNull().references(() => users.id),
+    completedAt: timestamp('completed_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+    userQuestUnique: unique('quest_completion_unique').on(table.questId),
+}));
+export const xpTransactions = pgTable('xp_transactions', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id),
+    characterId: uuid('character_id').notNull().references(() => characters.id),
+    arenaId: uuid('arena_id').references(() => arenas.id),
+    questId: uuid('quest_id').references(() => quests.id),
+    amount: integer('amount').notNull(),
+    sourceType: text('source_type', { enum: ['QUEST_COMPLETION'] }).notNull(),
+    sourceId: uuid('source_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+    questRewardUnique: unique('xp_transaction_reward_unique').on(table.sourceType, table.sourceId),
+}));
+export const journalEntries = pgTable('journal_entries', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id),
+    entryDate: text('entry_date').notNull(),
+    built: text('built'),
+    burned: text('burned'),
+    protect: text('protect'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+    journalUserDateUnique: unique('journal_user_date_unique').on(table.userId, table.entryDate),
+}));

@@ -1,0 +1,29 @@
+{
+  "name": "@forge/db",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "db:migrate": "tsx src/migrate.ts",
+    "db:seed": "tsx src/seed.ts",
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.1",
+    "drizzle-orm": "^0.36.4",
+    "pg": "^8.17.1",
+    "@forge/domain": "workspace:*",
+    "@forge/validation": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.1",
+    "@types/pg": "^8.11.11",
+    "drizzle-kit": "^0.28.1",
+    "tsx": "^4.19.1"
+  }
+}
