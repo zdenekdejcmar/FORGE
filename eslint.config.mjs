@@ -31,6 +31,7 @@ export default [
       semi: ['error', 'always'],
       quotes: ['error', 'single'],
 
+      'no-undef': 'off',
       'no-unused-vars': 'off',
 
       '@typescript-eslint/no-unused-vars': [
