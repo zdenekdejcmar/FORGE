@@ -7,6 +7,15 @@ import './styles.css';
 
 const queryClient = new QueryClient();
 
+// Preserve auto-create intent across navigation for E2E.
+if (typeof window !== 'undefined' && window.location.search.includes('autoCreateCharacter=1')) {
+  try {
+    localStorage.setItem('autoCreateCharacter', '1');
+  } catch (err) {
+    // ignore localStorage errors in test environments
+  }
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>

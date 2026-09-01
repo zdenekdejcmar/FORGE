@@ -70,11 +70,73 @@ CREATE TABLE IF NOT EXISTS xp_transactions (
   arena_id uuid REFERENCES arenas(id),
   quest_id uuid REFERENCES quests(id),
   amount integer NOT NULL,
-  source_type text NOT NULL CHECK (source_type IN ('QUEST_COMPLETION')),
+  source_type text NOT NULL CHECK (source_type IN ('QUEST_COMPLETION','ATTRIBUTE','DAILY_CHECKIN','REBIRTH','MOMENTUM','FAIR_ENEMY')),
   source_id uuid NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (source_type, source_id)
+  created_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- ensure quests can't be rewarded twice for the same quest
+CREATE UNIQUE INDEX IF NOT EXISTS idx_xp_transactions_quest_reward_unique ON xp_transactions(source_id) WHERE source_type = 'QUEST_COMPLETION';
+
+-- remove legacy global uniqueness on (source_type, source_id) to allow multiple attribute and other source transactions
+ALTER TABLE IF EXISTS xp_transactions DROP CONSTRAINT IF EXISTS xp_transactions_source_type_source_id_key;
+DROP INDEX IF EXISTS xp_transactions_source_type_source_id_key;
+
+-- ensure the source_type check constraint includes all supported types (reproducible)
+ALTER TABLE IF EXISTS xp_transactions DROP CONSTRAINT IF EXISTS xp_transactions_source_type_check;
+ALTER TABLE IF EXISTS xp_transactions ADD CONSTRAINT xp_transactions_source_type_check CHECK (source_type IN ('QUEST_COMPLETION','ATTRIBUTE','DAILY_CHECKIN','REBIRTH','MOMENTUM','FAIR_ENEMY'));
+
+CREATE TABLE IF NOT EXISTS attributes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  character_id uuid NOT NULL REFERENCES characters(id),
+  name text NOT NULL,
+  value integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS daily_checkins (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id),
+  character_id uuid NOT NULL REFERENCES characters(id),
+  entry_date text NOT NULL,
+  states text,
+  momentum integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id, entry_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_daily_checkins_user ON daily_checkins(user_id);
+
+-- ensure states column exists for daily_checkins (JSON/text blob of attribute states)
+ALTER TABLE IF EXISTS daily_checkins ADD COLUMN IF NOT EXISTS states text;
+
+CREATE TABLE IF NOT EXISTS rebirths (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id),
+  character_id uuid NOT NULL REFERENCES characters(id),
+  rebirth_type text,
+  metadata text,
+  rebirth_at timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS fair_enemies (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id),
+  character_id uuid NOT NULL REFERENCES characters(id),
+  entry_date text NOT NULL,
+  name text NOT NULL,
+  difficulty text NOT NULL CHECK (difficulty IN ('NORMAL','HARD','EPIC')),
+  primary_attribute text,
+  xp_reward integer NOT NULL DEFAULT 0,
+  status text NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','DEFEATED','ABANDONED')),
+  reflection text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  completed_at timestamptz
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_fair_enemies_unique_day ON fair_enemies(character_id, entry_date);
 
 CREATE TABLE IF NOT EXISTS journal_entries (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

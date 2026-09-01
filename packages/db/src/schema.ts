@@ -64,11 +64,57 @@ export const xpTransactions = pgTable('xp_transactions', {
   arenaId: uuid('arena_id').references(() => arenas.id),
   questId: uuid('quest_id').references(() => quests.id),
   amount: integer('amount').notNull(),
-  sourceType: text('source_type', { enum: ['QUEST_COMPLETION'] }).notNull(),
+  sourceType: text('source_type', { enum: ['QUEST_COMPLETION','ATTRIBUTE','DAILY_CHECKIN','REBIRTH','MOMENTUM','FAIR_ENEMY','RECOVERY'] }).notNull(),
   sourceId: uuid('source_id').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const attributes = pgTable('attributes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  characterId: uuid('character_id').notNull().references(() => characters.id),
+  name: text('name').notNull(),
+  value: integer('value').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const dailyCheckins = pgTable('daily_checkins', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  characterId: uuid('character_id').notNull().references(() => characters.id),
+  entryDate: text('entry_date').notNull(),
+  states: text('states'),
+  momentum: integer('momentum').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
-  questRewardUnique: unique('xp_transaction_reward_unique').on(table.sourceType, table.sourceId),
+  userDateUnique: unique('daily_checkin_user_date_unique').on(table.userId, table.entryDate),
+}));
+
+export const rebirths = pgTable('rebirths', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  characterId: uuid('character_id').notNull().references(() => characters.id),
+  rebirthType: text('rebirth_type'),
+  metadata: text('metadata'),
+  rebirthAt: timestamp('rebirth_at', { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const fairEnemies = pgTable('fair_enemies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  characterId: uuid('character_id').notNull().references(() => characters.id),
+  entryDate: text('entry_date').notNull(),
+  name: text('name').notNull(),
+  difficulty: text('difficulty', { enum: ['NORMAL','HARD','EPIC'] }).notNull().default('NORMAL'),
+  primaryAttribute: text('primary_attribute'),
+  xpReward: integer('xp_reward').notNull().default(0),
+  status: text('status', { enum: ['ACTIVE','DEFEATED','ABANDONED'] }).notNull().default('ACTIVE'),
+  reflection: text('reflection'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+}, (table) => ({
+  uniquePerDay: unique('fair_enemy_unique_per_day').on(table.characterId, table.entryDate),
 }));
 
 export const journalEntries = pgTable('journal_entries', {

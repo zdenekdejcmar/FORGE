@@ -35,11 +35,11 @@ export default function LoginPage() {
         <form onSubmit={onSubmit}>
           <label>
             Email
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </label>
           <label>
             Password
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input name="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </label>
           {error && <div className="alert error">{error}</div>}
           <button type="submit" disabled={loading}>{loading ? 'Signing in...' : 'Login'}</button>

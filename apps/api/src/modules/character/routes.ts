@@ -1,6 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { eq, sql } from 'drizzle-orm';
-import { characters, users, questCompletions, xpTransactions } from '../../../../../packages/db/src/schema';
+import { characters, users, questCompletions, xpTransactions, attributes } from '../../../../../packages/db/src/schema';
 import { characterSchema } from '../../../../../packages/validation/src/index';
 import { ConflictError, NotFoundError, ValidationError } from '../../shared/errors/http.js';
 
@@ -23,6 +23,12 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
       lore: parsed.data.lore || null,
       avatarUrl: parsed.data.avatarUrl || null,
     }).returning();
+
+    // create core attributes for the new character
+    const coreAttributes = ['DISCIPLINE','STRENGTH','HEALTH','FOCUS','ORDER','CRAFT','WEALTH','CAREER','CREATION','COURAGE','RELATIONSHIPS','SPIRIT'];
+    for (const a of coreAttributes) {
+      await app.db.insert(attributes).values({ characterId: created[0].id, name: a, value: 0 });
+    }
 
     reply.code(201).send(created[0]);
   });

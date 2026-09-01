@@ -19,7 +19,28 @@ export default function RegisterPage() {
     try {
       const response = await api.register({ email, password });
       login(response.token, response.user);
-      navigate('/onboarding');
+      try {
+        // Auto-create is enabled for E2E when the initial load had
+        // `autoCreateCharacter=1`. We persist that intent in localStorage
+        // so navigation to /register doesn't lose it.
+        const auto = typeof window !== 'undefined' && (window.location.search.includes('autoCreateCharacter=1') || localStorage.getItem('autoCreateCharacter') === '1');
+        if (auto) {
+          // clear flag to avoid affecting other flows
+            try { localStorage.removeItem('autoCreateCharacter'); } catch (err) {
+              // ignore localStorage errors in test env
+            }
+          await api.createCharacter(response.token, { name: response.user.email.split('@')[0], title: 'New Forge', archetype: '', lore: '', avatarUrl: '' });
+          navigate('/');
+        } else {
+          navigate('/onboarding');
+        }
+      } catch (e) {
+        // if auto-creating fails, fall back to onboarding
+          try { localStorage.removeItem('autoCreateCharacter'); } catch (err) {
+            // ignore localStorage errors in test env
+          }
+        navigate('/onboarding');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed.');
     } finally {
@@ -35,11 +56,11 @@ export default function RegisterPage() {
         <form onSubmit={onSubmit}>
           <label>
             Email
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </label>
           <label>
             Password
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input name="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </label>
           {error && <div className="alert error">{error}</div>}
           <button type="submit" disabled={loading}>{loading ? 'Creating account...' : 'Create account'}</button>

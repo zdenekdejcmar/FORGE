@@ -2,7 +2,7 @@ import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { arenas, characters, journalEntries, questCompletions, quests, users, xpTransactions } from './schema.js';
+import { arenas, characters, journalEntries, questCompletions, quests, users, xpTransactions, attributes, rebirths } from './schema.js';
 import { eq } from 'drizzle-orm';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL ?? 'postgres://forge:forge@localhost:5432/forge' });
@@ -18,8 +18,11 @@ async function seed() {
     const inserted = await db.insert(users).values({
       email: 'dev@forge.local',
       passwordHash,
-    }).returning({ id: users.id });
+    } as any).returning({ id: users.id });
     userId = inserted[0].id;
+  } else {
+    // ensure reproducible dev password for local development
+    await db.update(users).set({ passwordHash } as any).where(eq(users.id, userId));
   }
 
   const existingCharacter = await db.select().from(characters).where(eq(characters.userId, userId)).limit(1);
@@ -112,6 +115,21 @@ async function seed() {
       burned: 'Context switching and environment setup overhead.',
       protect: 'Keep the XP loop atomic and well-documented.',
     });
+  }
+  // VIRGO rebirth and core attributes
+  const virgoStart = new Date('2026-09-01T00:00:00Z');
+  const virgoExists = await db.select().from(rebirths).where(eq(rebirths.rebirthType, 'VIRGO')).limit(1);
+  if (virgoExists.length === 0) {
+    await db.insert(rebirths).values({ userId, characterId, rebirthType: 'VIRGO', metadata: JSON.stringify({ name: 'Virgo', symbol: '♍', title: 'The Order', startsAt: virgoStart.toISOString(), theme: 'Build systems that continue working when motivation disappears.', primaryAttributes: ['ORDER','DISCIPLINE','CRAFT','HEALTH','FOCUS'] }) });
+  }
+
+  const coreAttributes = ['DISCIPLINE','STRENGTH','HEALTH','FOCUS','ORDER','CRAFT','WEALTH','CAREER','CREATION','COURAGE','RELATIONSHIPS','SPIRIT'];
+  for (const a of coreAttributes) {
+    const existingAttr = await db.select().from(attributes).where(eq(attributes.characterId, characterId)).limit(100);
+    const match = existingAttr.find((item) => item.name === a);
+    if (!match) {
+      await db.insert(attributes).values({ characterId, name: a, value: 0 });
+    }
   }
 
   console.log('Seed complete.');

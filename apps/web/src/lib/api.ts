@@ -47,4 +47,12 @@ export const api = {
   getProgressArenas: (token: string) => request<ArenaProgress[]>('/progress/arenas', { method: 'GET' }, token),
   getJournal: (token: string) => request<any[]>('/journal', { method: 'GET' }, token),
   upsertJournal: (token: string, date: string, payload: any) => request(`/journal/${date}`, { method: 'PUT', body: JSON.stringify(payload) }, token),
+  getCurrentRebirth: (token: string) => request<any>('/rebirths/current', { method: 'GET' }, token),
+  getTodayCheckin: (token: string) => request<any>('/daily/today', { method: 'GET' }, token),
+  postDailyCheckin: (token: string, payload: any) => request<any>('/daily/checkin', { method: 'POST', body: JSON.stringify(payload) }, token),
+  getFairEnemyToday: (token: string) => request<any>('/fair-enemies/today', { method: 'GET' }, token),
+  createFairEnemy: (token: string, payload: any) => request<any>('/fair-enemies/today', { method: 'POST', body: JSON.stringify(payload) }, token),
+  defeatFairEnemy: (token: string, id: string) => request<any>(`/fair-enemies/${id}/defeat`, { method: 'POST' }, token),
+  abandonFairEnemy: (token: string, id: string) => request<any>(`/fair-enemies/${id}/abandon`, { method: 'POST' }, token),
+  getAttributes: (token: string) => request<any[]>('/attributes', { method: 'GET' }, token),
 };
