@@ -66,6 +66,7 @@ export const xpTransactions = pgTable('xp_transactions', {
   amount: integer('amount').notNull(),
   sourceType: text('source_type', { enum: ['QUEST_COMPLETION','ATTRIBUTE','DAILY_CHECKIN','REBIRTH','MOMENTUM','FAIR_ENEMY','RECOVERY'] }).notNull(),
   sourceId: uuid('source_id').notNull(),
+  dailyCheckinId: uuid('daily_checkin_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -85,6 +86,7 @@ export const dailyCheckins = pgTable('daily_checkins', {
   entryDate: text('entry_date').notNull(),
   states: text('states'),
   momentum: integer('momentum').notNull().default(0),
+  resolvedAt: timestamp('resolved_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   userDateUnique: unique('daily_checkin_user_date_unique').on(table.userId, table.entryDate),

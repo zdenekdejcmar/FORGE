@@ -96,12 +96,12 @@ test('sprint02 integration - daily checkin and fair enemy', async () => {
   expect(Array.isArray(attributes)).toBe(true);
   expect(attributes.length).toBeGreaterThanOrEqual(3);
 
-  // post daily checkin with DONE for first three attributes
-  const states: Record<string, string> = {};
-
-  for (let i = 0; i < 3; i += 1) {
-    states[attributes[i].name] = 'DONE';
-  }
+  // post daily checkin with canonical Daily Domain keys
+const states: Record<string, string> = {
+  SLEEP: 'DONE',
+  QUALITY_FOOD: 'DONE',
+  STRENGTH_MOVEMENT: 'DONE',
+};
 
   r = await request('/daily/checkin', {
     method: 'POST',
